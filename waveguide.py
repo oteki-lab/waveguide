@@ -1,10 +1,9 @@
 from numpy import pi, sqrt, exp, sin, cos, arctan
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 import n
 
-wl = np.array([1100, 1200])*1e-9    #1200e-9
+wl = 1100e-9
 L = np.arange(10, 1800+10, 10)*1e-9
 Nt = n.AlGaAs(0.8, wl)
 Ng = n.AlGaAs(0.0, wl)
