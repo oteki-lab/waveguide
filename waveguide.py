@@ -1,22 +1,23 @@
 from numpy import pi, sqrt, exp, sin, cos, arctan
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+import n
 
-wl = 1100e-9
-L = np.arange(10, 1010, 10)*1e-9
-#L = np.array([10e-9, 542e-9, 543e-9])
-Nt = 3.331
-Ng = 3.482
-Ns = 3.331
+wl = np.array([1100, 1200])*1e-9    #1200e-9
+L = np.arange(10, 1800+10, 10)*1e-9
+Nt = n.AlGaAs(0.8, wl)
+Ng = n.AlGaAs(0.0, wl)
+Ns = n.AlGaAs(0.8, wl)
 m=0
 
 
-def f(x):
+def left(x):
     return 2*pi*L/wl*sqrt(Ng**2-x**2)
-def g(x):
+def right(x):
     return arctan(sqrt((x**2-Nt**2)/(Ng**2-x**2))) + arctan(sqrt((x**2-Ns**2)/(Ng**2-x**2))) + m*pi
 def h(x):
-    return f(x)-g(x)
+    return left(x)-right(x)
 
 
 def BinarySearch(eq, upper,lower):
@@ -58,20 +59,26 @@ plt.xlim(0, max(L)*1e9)
 plt.ylim(0,1)
 plt.show()
 
-def field(yi, T):
+def f(yi, j):
     if yi<0:
-        return cos(phi[-1])*exp(As[-1]*yi)
-    elif yi<T:
-        return cos(k0*sqrt(Ng**2-Ne[-1]**2)*yi+phi[-1])
+        return cos(phi[j])*exp(As[j]*yi)
+    elif yi<L[j]:
+        return cos(k0*sqrt(Ng**2-Ne[j]**2)*yi+phi[j])
     else:
-        return cos(k0*sqrt(Ng**2-Ne[-1]**2)*T+phi[-1])*exp(-At[-1]*(yi-T))
+        return cos(k0*sqrt(Ng**2-Ne[j]**2)*L[j]+phi[j])*exp(-At[j]*(yi-L[j]))
 
+j = -1
+y = np.arange(-1000, L[j]*1e9+1010, 10)*1e-9
+x = y-L[j]/2
+E = np.array([f(yi, j) for yi in y])
 
-y = np.arange(0, 1010, 10)*1e-9
-E = [field(yi, L[-1]) for yi in y]
-
+ylim = [0, 1.1]
 fig = plt.figure()
 ax3 = fig.add_subplot(1, 1, 1)
-ax3.plot(y*1e9, E)
-plt.xlim(min(y)*1e9, max(y)*1e9)
+ax3.plot(x*1e9, E)
+ax3.plot(np.array([-L[j]/2, -L[j]/2])*1e9, ylim, color='black', linestyle='dashed')
+ax3.plot(np.array([L[j]/2, L[j]/2])*1e9, ylim, color='black', linestyle='dashed')
+plt.xlim(min(x)*1e9, max(x)*1e9)
+plt.ylim(ylim)
+#plt.yscale('log')
 plt.show()
