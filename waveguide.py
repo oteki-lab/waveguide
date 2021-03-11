@@ -2,14 +2,16 @@ from numpy import pi, sqrt, exp, sin, cos, arctan
 import numpy as np
 import matplotlib.pyplot as plt
 import n
+import draw
 
-wl = 1100e-9
-L = np.arange(10, 1800+10, 10)*1e-9
+wl0 = np.arange(1000, 5000+1000, 1000)*1e-9    #1200e-9
+L0 = np.arange(10, 2000+10, 10)*1e-9
+wl = np.tile(wl0, (len(L0), 1))
+L = np.tile(L0, (len(wl0), 1)).transpose()
 Nt = n.AlGaAs(0.8, wl)
 Ng = n.AlGaAs(0.0, wl)
 Ns = n.AlGaAs(0.8, wl)
 m=0
-
 
 def left(x):
     return 2*pi*L/wl*sqrt(Ng**2-x**2)
@@ -21,63 +23,51 @@ def h(x):
 
 def BinarySearch(eq, upper,lower):
     err = 1e-10
-    up=upper-err*np.ones(len(L))
-    low=lower+err*np.ones(len(L))
+    up=upper-err
+    low=lower+err
     limit=10000
     for count in range(limit):
         mid=(up+low)/2  #数値解
         y=eq(mid)       #関数値
-        if all(abs(y)<err) or count>limit:      #解が発見された
+        if np.all(abs(y)<err*np.ones(y.shape)) or count>limit:      #解が発見された
             break
         flag = eq(low)*y<0
         up[flag]=mid[flag]    #解は下限と中間点の間にある
         low[~flag]=mid[~flag] #解は上限と中間点の間にある
     return mid
 
-k0 = 2*pi/wl
+
 Ne = BinarySearch(h, Ng, Ns)
-E1 = 1/(2*k0*sqrt(Ne**2-Ns**2))
-E2 = L/2 + sin(2*k0*sqrt(Ng**2-Ne**2)*L)/(4*k0*sqrt(Ng**2-Ne**2))
-E3 = (cos(k0*sqrt(Ng**2-Ne**2)*L))**2/(2*k0*sqrt(Ne**2-Nt**2))
+k0 = 2*pi/wl
+ky = k0*sqrt(Ng**2-Ne**2)
+As = k0*sqrt(Ne**2-Ns**2)
+At = k0*sqrt(Ne**2-Nt**2)
+phi = arctan(-As/(ky))
+E1 = 1/(2*As)
+E2 = L/2 + sin(2*ky*L)/(4*ky)
+E3 = (cos(ky*L))**2/(2*At)
 Gamma = E2/(E1+E2+E3)
 Gamma[Ng-Ne<1e-5] = 0.0
 b = (Ne**2-Nt**2)/(Ng**2-Nt**2)
 b[Ng-Ne<1e-5] = 0.0
-As = k0*sqrt(Ne**2-Ns**2)
-At = k0*sqrt(Ne**2-Nt**2)
-phi = arctan(-As/(k0*sqrt(Ng**2-Ne**2)))
 
-fig = plt.figure()
-ax1 = fig.add_subplot(1, 2, 1)
-ax1.plot(L*1e9, b)
-plt.xlim(0, max(L)*1e9)
-plt.ylim(0,1)
-ax2 = fig.add_subplot(1, 2, 2)
-ax2.plot(L*1e9, Gamma)
-plt.xlim(0, max(L)*1e9)
-plt.ylim(0,1)
-plt.show()
+draw.graph1(L0, wl0, b, Gamma)
 
-def f(yi, j):
+def f(yi, j, k):
     if yi<0:
-        return cos(phi[j])*exp(As[j]*yi)
-    elif yi<L[j]:
-        return cos(k0*sqrt(Ng**2-Ne[j]**2)*yi+phi[j])
+        return cos(phi[j][k])*exp(As[j][k]*yi)
+    elif yi<L[j][k]:
+        return cos(k0[j][k]*sqrt(Ng[j][k]**2-Ne[j][k]**2)*yi+phi[j][k])
     else:
-        return cos(k0*sqrt(Ng**2-Ne[j]**2)*L[j]+phi[j])*exp(-At[j]*(yi-L[j]))
+        return cos(k0[j][k]*sqrt(Ng[j][k]**2-Ne[j][k]**2)*L[j][k]+phi[j][k])*exp(-At[j][k]*(yi-L[j][k]))
+
+div = 1000
+y = np.empty((len(L0), div))
+E = np.empty((len(L0), len(wl0), div))
+for j, Lj in enumerate(L0):
+    for k, wlk in enumerate(wl0):
+        y[j] = np.linspace(-L0[j]*3/2, L0[j]*3/2, div)
+        E[j][k] = np.array([f(yi+L0[j]/2, j, k) for yi in y[j]])
 
 j = -1
-y = np.arange(-1000, L[j]*1e9+1010, 10)*1e-9
-x = y-L[j]/2
-E = np.array([f(yi, j) for yi in y])
-
-ylim = [0, 1.1]
-fig = plt.figure()
-ax3 = fig.add_subplot(1, 1, 1)
-ax3.plot(x*1e9, E)
-ax3.plot(np.array([-L[j]/2, -L[j]/2])*1e9, ylim, color='black', linestyle='dashed')
-ax3.plot(np.array([L[j]/2, L[j]/2])*1e9, ylim, color='black', linestyle='dashed')
-plt.xlim(min(x)*1e9, max(x)*1e9)
-plt.ylim(ylim)
-#plt.yscale('log')
-plt.show()
+draw.graph2(L0, wl0, j, E, y)
