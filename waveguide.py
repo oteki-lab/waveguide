@@ -4,20 +4,22 @@ import matplotlib.pyplot as plt
 import n
 import draw
 
-wl0 = np.arange(1200, 1200+500, 500)*1e-9    #1200e-9
-L0 = np.arange(10, 2000+10, 10)*1e-9
-wl = np.tile(wl0, (len(L0), 1))
-L = np.tile(L0, (len(wl0), 1)).transpose()
-Nt = n.AlGaAs(0.8, wl)
-Ng = n.AlGaAs(0.0, wl)
-Ns = n.AlGaAs(0.8, wl)
-m = 0
+m = np.arange(0, 2)
+w = np.arange(1000, 5000+500, 500)*1e-9
+d = np.arange(10, 2000+10, 10)*1e-9
 
+M = np.array([np.tile(m, (len(w),1))]*len(d)).transpose()
+D = np.array([np.tile(d, (len(w),1))]*len(m))
+W = np.array([np.tile(w, (len(m),1)).transpose()]*len(d)).transpose()
+
+Nt = n.AlGaAs(0.8, W)
+Ng = n.AlGaAs(0.0, W)
+Ns = n.AlGaAs(0.8, W)
 
 def left(x):
-    return 2*pi*L/wl*sqrt(Ng**2-x**2)
+    return 2*pi*D/W*sqrt(Ng**2-x**2)
 def right(x):
-    return arctan(sqrt((x**2-Nt**2)/(Ng**2-x**2))) + arctan(sqrt((x**2-Ns**2)/(Ng**2-x**2))) + m*pi
+    return arctan(sqrt((x**2-Nt**2)/(Ng**2-x**2))) + arctan(sqrt((x**2-Ns**2)/(Ng**2-x**2))) + M*pi
 def h(x):
     return left(x)-right(x)
 
@@ -38,34 +40,44 @@ def BinarySearch(eq, upper,lower):
 
 Ne = BinarySearch(h, Ng, Ns)
 
-k0 = 2*pi/wl
-ky, As, At = k0*[sqrt(Ng**2-Ne**2), sqrt(Ne**2-Ns**2), sqrt(Ne**2-Nt**2)]
+k0 = 2*pi/W
+ky = k0*sqrt(Ng**2-Ne**2)
+As = k0*sqrt(Ne**2-Ns**2)
+At = k0*sqrt(Ne**2-Nt**2)
 phi = arctan(-As/ky)
 
-E1, E2, E3 = [1/(2*As), L/2+sin(2*ky*L)/(4*ky), (cos(ky*L))**2/(2*At)]
+E1, E2, E3 = [1/(2*As), D/2+sin(2*ky*D)/(4*ky), (cos(ky*D))**2/(2*At)]
 Gamma = E2/(E1+E2+E3)
 Gamma[Ng-Ne<1e-5] = 0.0
 b = (Ne**2-Nt**2)/(Ng**2-Nt**2)
 b[Ng-Ne<1e-5] = 0.0
 
-draw.graph1(L0, wl0, b, Gamma)
+i = 0
+j = 0
+
+draw.graph1(m, j, d, b, Gamma)
 
 
-def f(yi, j, k):
-    if yi<0:
-        return cos(phi[j][k])*exp(As[j][k]*yi)
-    elif yi<L[j][k]:
-        return cos(k0[j][k]*sqrt(Ng[j][k]**2-Ne[j][k]**2)*yi+phi[j][k])
+def f(yl, i, j, k):
+    if yl<0:
+        return cos(phi[i][j][k])*exp(As[i][j][k]*yl)
+    elif yl<D[i][j][k]:
+        return cos(k0[i][j][k]*sqrt(Ng[i][j][k]**2-Ne[i][j][k]**2)*yl+phi[i][j][k])
     else:
-        return cos(k0[j][k]*sqrt(Ng[j][k]**2-Ne[j][k]**2)*L[j][k]+phi[j][k])*exp(-At[j][k]*(yi-L[j][k]))
+        return cos(k0[i][j][k]*sqrt(Ng[i][j][k]**2-Ne[i][j][k]**2)*D[i][j][k]+phi[i][j][k])*exp(-At[i][j][k]*(yl-D[i][j][k]))
 
+k = -1
+start = -d[k]*3/2
+end = d[k]*3/2
 div = 1000
-y = np.empty((len(L0), div))
-E = np.empty((len(L0), len(wl0), div))
-for j, Lj in enumerate(L0):
-    for k, wlk in enumerate(wl0):
-        y[j] = np.linspace(-L0[j]*3/2, L0[j]*3/2, div)
-        E[j][k] = np.array([f(yi+L0[j]/2, j, k) for yi in y[j]])
+y = np.linspace(start, end, div)
+E = np.empty((len(m), len(w), div))
+for i, _ in enumerate(m):
+    for j, _ in enumerate(w):
+        E[i][j] = np.array([f(yl+d[k]/2, i, j, k) for yl in y])
 
-j = -1
-draw.graph2(L0, wl0, j, E, y)
+i = -1
+j = 0
+boundaries = np.array([-d[k]/2, d[k]/2])*1e9
+
+draw.graph2(m, j, y, E, boundaries)
