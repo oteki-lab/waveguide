@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def graph1(m, w, d, b, Gamma):
+def graph1(m, w, d, b, Gamma, mode):
     fig = plt.figure()
     ax1 = fig.add_subplot(121, xlabel='Core width (nm)', ylabel='Normalized guide index')
     if type(m) is np.ndarray:
@@ -19,6 +19,7 @@ def graph1(m, w, d, b, Gamma):
     ax1.set_yticks([0.0, 0.1, 0.2, 0.3, 0.4, 0.5 ,0.6 ,0.7 ,0.8, 0.9, 1.0])
     ax1.grid(which = "major", axis = "y", color = "gray", alpha = 0.8, linestyle = "--", linewidth = 1)
     plt.legend(bbox_to_anchor=(1, 0), loc='lower right', borderaxespad=0, fontsize=9, prop={'size':8,}, frameon=False, title=title)
+    #ax1.text(0, 0.95, mode)
     ax2 = fig.add_subplot(122, xlabel='Core width (nm)', ylabel='Confinement factor')
     if type(m) is np.ndarray:
         for i, _ in enumerate(m):
@@ -33,10 +34,11 @@ def graph1(m, w, d, b, Gamma):
     ax2.set_yticks([0.0, 0.1, 0.2, 0.3, 0.4, 0.5 ,0.6 ,0.7 ,0.8, 0.9, 1.0])
     ax2.grid(which = "major", axis = "y", color = "gray", alpha = 0.8, linestyle = "--", linewidth = 1)
     plt.legend(bbox_to_anchor=(1, 0), loc='lower right', borderaxespad=0, fontsize=9, prop={'size':8,}, frameon=False, title=title)
+    #ax2.text(0, 0.95, mode)
     fig.tight_layout()
     plt.show()
 
-def graph2(m, w, y, E, boundaries):
+def graph2(m, w, y, E, boundaries, mode):
     fig = plt.figure()
     ax = fig.add_subplot(111, xlabel='y (nm)', ylabel='Ey')
     if type(m) is np.ndarray:
@@ -50,7 +52,8 @@ def graph2(m, w, y, E, boundaries):
     ylim = [-1.1, 1.1]
     for boundary in boundaries:
         ax.plot([boundary, boundary], ylim, color='black', linestyle='dashed')
-    plt.xlim(min(y)*1e9, max(y)*1e9)
+    plt.xlim(np.array([min(y), max(y)])*1e9)
     plt.ylim(ylim)
     plt.legend(borderaxespad=0, fontsize=9, prop={'size':8,}, frameon=False, title=title)
+    #ax.text(0, 1.0, mode)
     plt.show()
